@@ -20,6 +20,9 @@ type copyCmdCollector struct {
 	cmds []CopyCmd
 }
 
+// CollectCopyCommands returns all COPY commands detected in the given Target.
+// For simplicity, it also returns dummy `CopyCmd`s for detected Earthfile dependencies.
+// TODO: separate COPY command collection from target dependency resolution.
 func CollectCopyCommands(f *Earthfile, t *spec.Target) []CopyCmd {
 	visitor := &copyCmdCollector{ef: f}
 	WalkRecipe(t.Recipe, visitor)
@@ -83,7 +86,6 @@ func (v *copyCmdCollector) visitFromCommand(c spec.Command) {
 	}
 
 	// Add a fake COPY command for the Earthfile, to trick the pipeline into recognizing it as a dep.
-	// TODO: separate COPY command collection from target dependency deduction?
 	v.cmds = append(v.cmds, CopyCmd{Line: "<sentinel>", Base: v.ef.Dir, From: ef.Path})
 
 	v.cmds = append(v.cmds, CollectCopyCommands(ef, t)...)
