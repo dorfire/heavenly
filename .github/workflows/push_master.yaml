@@ -1,0 +1,27 @@
+name: Release binary
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  go-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: actions/setup-go@v3
+        with:
+          go-version-file: 'go.mod'
+
+      - uses: golangci/golangci-lint-action@v3
+        continue-on-error: true
+
+      - run: go build -o /tmp/heavenly.linux
+        working-directory: cmd
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: heavenly
+          path: /tmp/heavenly.linux
