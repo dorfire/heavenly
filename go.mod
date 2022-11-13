@@ -10,7 +10,7 @@ require (
 	github.com/google/go-cmp v0.5.9
 	github.com/samber/lo v1.33.0
 	github.com/tufin/asciitree v0.0.0-20210127111056-bf70173ef677
-	github.com/urfave/cli/v2 v2.23.2
+	github.com/urfave/cli/v2 v2.23.5
 )
 
 require (
