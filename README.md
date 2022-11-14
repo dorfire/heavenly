@@ -33,7 +33,4 @@ GLOBAL OPTIONS:
    --chdir value  
    --debug        (default: false)
    --help, -h     show help (default: false)
-
-NAME:
-   heavenly - manages Earthly from above
 ```
