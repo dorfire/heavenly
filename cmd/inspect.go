@@ -105,6 +105,10 @@ func expandCopyCmd(ef *earthfile.Earthfile, cp earthfile.CopyCmd) (res []string,
 		if err != nil {
 			return nil, fmt.Errorf("could not glob pattern '%s' in '%s': %w", cp.From, ef.Dir, err)
 		}
+		res, err = expandGlobMatches(res)
+		if err != nil {
+			return nil, fmt.Errorf("could not expand glob matches in '%s': %w", ef.Dir, err)
+		}
 	} else if fileutil.DirExistsBestEffort(fsFrom) {
 		res, err = filesInDir(fsFrom)
 		if err != nil {
@@ -116,6 +120,25 @@ func expandCopyCmd(ef *earthfile.Earthfile, cp earthfile.CopyCmd) (res []string,
 
 	logger.DebugPrintf("[%s] Expanded `%s` to =>\n  %v", ef.Dir, cp.Line, res)
 
+	return res, nil
+}
+
+func expandGlobMatches(matches []string) ([]string, error) {
+	res := make([]string, 0, len(matches))
+	for _, m := range matches {
+		if !fileutil.DirExistsBestEffort(m) {
+			res = append(res, m)
+			continue
+		}
+
+		logger.DebugPrintf("Expanding files in dir %s", m)
+		files, err := filesInDir(m)
+		if err != nil {
+			return nil, err
+		}
+
+		res = append(res, files...)
+	}
 	return res, nil
 }
 
