@@ -7,10 +7,14 @@ import (
 	"github.com/earthly/earthly/ast/spec"
 )
 
+const (
+	SentinelCopyCmdLine = "<sentinel>"
+)
+
 type CopyCmd struct {
-	Line     string // Earthfile syntax of this command
-	Base     string // Path to the directory in which this command resides
-	DirOpt   bool   // Whether --dir was passed to the command
+	Line     string     // Earthfile syntax of this command
+	File     *Earthfile // Earthfile where this command resides
+	DirOpt   bool       // Whether --dir was passed to the command
 	From, To string
 }
 
@@ -47,7 +51,7 @@ func (v *copyCmdCollector) visitCopyCommand(c spec.Command) {
 
 	res := CopyCmd{
 		Line: cmdRepr(c),
-		Base: v.ef.Dir,
+		File: v.ef,
 	}
 
 	if c.Args[0] == "--dir" {
@@ -86,7 +90,7 @@ func (v *copyCmdCollector) visitFromCommand(c spec.Command) {
 	}
 
 	// Add a fake COPY command for the Earthfile, to trick the pipeline into recognizing it as a dep.
-	v.cmds = append(v.cmds, CopyCmd{Line: "<sentinel>", Base: v.ef.Dir, From: ef.Path})
+	v.cmds = append(v.cmds, CopyCmd{Line: SentinelCopyCmdLine, File: v.ef, From: ef.Path})
 
 	v.cmds = append(v.cmds, CollectCopyCommands(ef, t)...)
 }

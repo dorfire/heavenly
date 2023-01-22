@@ -71,9 +71,11 @@ func (f *Earthfile) TargetNames() []string {
 }
 
 func (f *Earthfile) ExpandArgs(s string) string {
-	// TODO: support target-specific args?
-	for globalName, globalVal := range f.Globals {
-		s = strings.ReplaceAll(s, "$"+globalName, globalVal)
+	if strings.ContainsRune(s, '$') {
+		// TODO: support target-specific args?
+		for globalName, globalVal := range f.Globals {
+			s = strings.ReplaceAll(s, "$"+globalName, globalVal)
+		}
 	}
 	return s
 }

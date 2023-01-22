@@ -75,12 +75,16 @@ func prettyPathTree(paths mapset.Set[string]) string {
 func debugPrintCopyCommands(target *spec.Target, copies []earthfile.CopyCmd) {
 	logger.DebugPrintf("COPY commands in target '%s':\n", target.Name)
 	for _, c := range copies {
-		logger.DebugPrintf(" - %s (base: %s)", c.Line, c.Base)
+		logger.DebugPrintf(" - %s (base: %s)", c.Line, c.File.Dir)
 	}
 }
 
 func expandCopyCmd(ef *earthfile.Earthfile, cp earthfile.CopyCmd) (res []string, err error) {
 	// Each 'COPY' command either references an Earthly target, a simple path, or a glob pattern.
+
+	if cp.Line == earthfile.SentinelCopyCmdLine { // Nothing to expand
+		return []string{cp.File.Path}, nil
+	}
 
 	// First, replace $ARG refs with their underlying value
 	cp.From = ef.ExpandArgs(cp.From)
@@ -98,7 +102,7 @@ func expandCopyCmd(ef *earthfile.Earthfile, cp earthfile.CopyCmd) (res []string,
 		targetCPs := earthfile.CollectCopyCommands(fromEarthfile, fromTarget)
 
 		res = lo.FlatMap(targetCPs, func(c earthfile.CopyCmd, _ int) []string {
-			return lo.Must(expandCopyCmd(fromEarthfile, c))
+			return lo.Must(expandCopyCmd(c.File, c))
 		})
 	} else if strings.Contains(cp.From, "*") {
 		res, err = filepath.Glob(fsFrom)
@@ -115,7 +119,7 @@ func expandCopyCmd(ef *earthfile.Earthfile, cp earthfile.CopyCmd) (res []string,
 			return nil, fmt.Errorf("could not list files '%s': %w", ef.Dir, err)
 		}
 	} else {
-		res = []string{filepath.Join(cp.Base, cp.From)}
+		res = []string{filepath.Join(cp.File.Dir, cp.From)}
 	}
 
 	logger.DebugPrintf("[%s] Expanded `%s` to =>\n  %v", ef.Dir, cp.Line, res)
