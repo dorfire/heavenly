@@ -104,7 +104,15 @@ func appCommands() []*cli.Command {
 			Name:      "gocopies",
 			Usage:     "analyze a given Go package and print the COPY commands it needs in order to build",
 			ArgsUsage: "package path",
-			Action:    resolveGoImports,
+			Action:    func(cCtx *cli.Context) error { return resolveGoImports(cCtx, false) },
+			Flags:     []cli.Flag{&cli.StringFlag{Name: "go-mod-dir", Aliases: []string{"gomod"}}},
+		},
+		{
+			Name:      "gotestcopies",
+			Usage:     "analyze a given Go package and print the COPY commands it needs in order to build tests",
+			ArgsUsage: "package path",
+			Action:    func(cCtx *cli.Context) error { return resolveGoImports(cCtx, true) },
+			Flags:     []cli.Flag{&cli.StringFlag{Name: "go-mod-dir", Aliases: []string{"gomod"}}},
 		},
 		{
 			Name:  "dlearthly",

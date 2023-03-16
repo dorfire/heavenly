@@ -24,6 +24,12 @@ type Earthfile struct {
 }
 
 func Parse(path string) (*Earthfile, error) {
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Printf("ERROR: could not parse %s\n", path)
+		}
+	}()
+
 	// ast.Parse seems to not do anything of importance with ctx, so passing context.Background()
 	a, err := ast.Parse(context.Background(), path, false)
 	if err != nil {

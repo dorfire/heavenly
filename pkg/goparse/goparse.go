@@ -1,4 +1,4 @@
-package goastutil
+package goparse
 
 import (
 	"fmt"
@@ -18,10 +18,10 @@ const (
 	goModName = "go.mod"
 )
 
-func ParseModFile(dir string) (*modfile.File, error) {
+func ModFile(dir string) (*modfile.File, error) {
 	goModPath := filepath.Join(dir, goModName)
 
-	goModContent, err := os.ReadFile(filepath.Join(dir, goModName))
+	goModContent, err := os.ReadFile(goModPath)
 	if err != nil {
 		return nil, fmt.Errorf("could not read %s: %w", goModPath, err)
 	}
@@ -34,7 +34,7 @@ func ParseModFile(dir string) (*modfile.File, error) {
 	return goModFile, nil
 }
 
-func ParsePackageImports(path string, test bool) (mapset.Set[string], error) {
+func PackageImports(path string, test bool) (mapset.Set[string], error) {
 	fset := token.NewFileSet()
 	incl := func(i fs.FileInfo) bool {
 		isTestFile := strings.HasSuffix(i.Name(), "_test.go")

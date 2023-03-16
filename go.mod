@@ -11,6 +11,8 @@ require (
 	github.com/samber/lo v1.33.0
 	github.com/tufin/asciitree v0.0.0-20210127111056-bf70173ef677
 	github.com/urfave/cli/v2 v2.23.5
+	golang.org/x/exp v0.0.0-20220303212507-bbda1eaf7a17
+	golang.org/x/mod v0.6.0-dev.0.20211013180041-c96bc1413d57
 )
 
 require (
@@ -35,8 +37,8 @@ require (
 	github.com/xanzy/ssh-agent v0.3.0 // indirect
 	github.com/xrash/smetrics v0.0.0-20201216005158-039620a65673 // indirect
 	golang.org/x/crypto v0.0.0-20220826181053-bd7e27e6170d // indirect
-	golang.org/x/exp v0.0.0-20220303212507-bbda1eaf7a17 // indirect
 	golang.org/x/net v0.0.0-20220906165146-f3363e06e74c // indirect
 	golang.org/x/sys v0.0.0-20220919091848-fb04ddd9f9c8 // indirect
+	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 )
