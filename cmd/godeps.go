@@ -41,6 +41,11 @@ func resolveGoImports(ctx *cli.Context, testOnly bool) error {
 		return errors.New("missing Go package argument")
 	}
 
+	pkgPathAbs, err := filepath.Abs(pkgPath)
+	if err != nil {
+		return err
+	}
+
 	pkgImports, err := goparse.PackageImports(pkgPath, false)
 	if err != nil {
 		return err
@@ -65,14 +70,16 @@ func resolveGoImports(ctx *cli.Context, testOnly bool) error {
 	var resolvedCopyCmds []spec.Command
 	modPath := goModFile.Module.Mod.Path
 	for imp := range pkgImports.Iter() {
-		if !strings.HasPrefix(imp, modPath) {
-			continue // Ignore non-internal imports
+		impDir := strings.Replace(imp, modPath, goModRoot, 1)
+		if !strings.HasPrefix(imp, modPath) || impDir == pkgPathAbs {
+			continue // Ignore non-internal imports and same-dir imports
 		}
 
-		cmd, err := resolveCopyCommandForGoImport(imp, modPath, goModRoot, projRoot)
+		cmd, err := resolveCopyCommandForGoImport(impDir, modPath, goModRoot, projRoot)
 		if err != nil {
 			return err
 		}
+
 		resolvedCopyCmds = append(resolvedCopyCmds, cmd)
 	}
 
@@ -86,8 +93,7 @@ func resolveGoImports(ctx *cli.Context, testOnly bool) error {
 	return nil
 }
 
-func resolveCopyCommandForGoImport(imp string, module string, goModRoot string, projRoot string) (spec.Command, error) {
-	impDir := strings.Replace(imp, module, goModRoot, 1)
+func resolveCopyCommandForGoImport(impDir string, module string, goModRoot string, projRoot string) (spec.Command, error) {
 	resolvedEarthdir, err := earthdir.InOrAbove(impDir, goModRoot, true)
 	if err != nil {
 		return spec.Command{}, err
