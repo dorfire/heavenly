@@ -101,6 +101,12 @@ func appCommands() []*cli.Command {
 			},
 		},
 		{
+			Name:      "gocopies",
+			Usage:     "analyze a given Go package and print the COPY commands it needs in order to build",
+			ArgsUsage: "package path",
+			Action:    resolveGoImports,
+		},
+		{
 			Name:  "dlearthly",
 			Usage: "download an Earthly binary suitable for the current OS/arch and verify it against a given hash",
 			Action: func(cCtx *cli.Context) error {
