@@ -96,7 +96,7 @@ func expandCopyCmd(ef *earthfile.Earthfile, cp earthfile.CopyCmd) (res []string,
 		targetPath, _ := splitTargetFileSelector(cp.From)
 		fromEarthfile, fromTarget, err := ef.Target(targetPath)
 		if err != nil {
-			return nil, fmt.Errorf("could not find target '%s': %w", cp.From, err)
+			return nil, fmt.Errorf("in %s: could not find target '%s': %w", ef.Path, cp.From, err)
 		}
 
 		targetCPs := earthfile.CollectCopyCommands(fromEarthfile, fromTarget)
