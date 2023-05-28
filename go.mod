@@ -6,7 +6,7 @@ require (
 	github.com/deckarep/golang-set/v2 v2.1.0
 	github.com/earthly/earthly v0.6.29
 	github.com/earthly/earthly/ast v0.0.1
-	github.com/go-git/go-git/v5 v5.4.2
+	github.com/go-git/go-git/v5 v5.7.0
 	github.com/google/go-cmp v0.5.9
 	github.com/samber/lo v1.33.0
 	github.com/tufin/asciitree v0.0.0-20210127111056-bf70173ef677
