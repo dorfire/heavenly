@@ -16,11 +16,6 @@ import (
 	"github.com/dorfire/heavenly/pkg/goparse"
 )
 
-const (
-	goModName          = "go.mod"
-	wellKnownSrcTarget = "src" // Earthfiles are expected to contain this target
-)
-
 // resolveGoImports resolves internal Go imports in a given package to the COPY commands they probably depend on.
 // This is a poor man's Gazelle - it presumes every imported directory has an Earthfile in it, or above it, with a +src
 // target, but doesn't actually ensure it includes the required Go source files or that it even exists.
@@ -75,7 +70,7 @@ func resolveGoImports(ctx *cli.Context, testOnly bool) error {
 			continue // Ignore non-internal imports and same-dir imports
 		}
 
-		cmd, err := resolveCopyCommandForGoImport(impDir, modPath, goModRoot, projRoot)
+		cmd, err := resolveCopyCommandForGoImport(impDir, goModRoot, projRoot)
 		if err != nil {
 			return err
 		}
@@ -93,7 +88,7 @@ func resolveGoImports(ctx *cli.Context, testOnly bool) error {
 	return nil
 }
 
-func resolveCopyCommandForGoImport(impDir string, module string, goModRoot string, projRoot string) (spec.Command, error) {
+func resolveCopyCommandForGoImport(impDir string, goModRoot string, projRoot string) (spec.Command, error) {
 	resolvedEarthdir, err := earthdir.InOrAbove(impDir, goModRoot, true)
 	if err != nil {
 		return spec.Command{}, err
