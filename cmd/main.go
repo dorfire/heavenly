@@ -1,15 +1,12 @@
 package main
 
 import (
-	"errors"
 	"fmt"
-	"github.com/dorfire/heavenly/pkg/godepresolver"
-	"log"
-	"os"
-
 	"github.com/earthly/earthly/conslogging"
 	"github.com/earthly/earthly/util/fileutil"
 	cli "github.com/urfave/cli/v2"
+	"log"
+	"os"
 )
 
 var (
@@ -108,31 +105,11 @@ func appCommands() []*cli.Command {
 			Name:      "gocopies",
 			Usage:     "analyze a given Go package and print the COPY commands it needs in order to build",
 			ArgsUsage: "package path",
-			Action: func(cCtx *cli.Context) error {
-				pkgPath := cCtx.Args().First()
-				if pkgPath == "" {
-					return errors.New("missing Go package argument")
-				}
-
-				r, err := godepresolver.New(cCtx.String("go-mod-dir"), logger)
-				if err != nil {
-					return err
-				}
-
-				copies, testCopies, err := r.RecursivelyResolveImportsToCopyCommands(pkgPath)
-				if err != nil {
-					return err
-				}
-
-				logger.PrintPhaseHeader("\nCOPY commands for regular Go source files", false, "")
-				fmt.Println(godepresolver.FormatCopyCommands(copies))
-
-				logger.PrintPhaseHeader("\nCOPY commands for Go test files", false, "")
-				fmt.Println(godepresolver.FormatCopyCommands(testCopies))
-
-				return nil
+			Action:    printCopyCommandsForGoDeps,
+			Flags: []cli.Flag{
+				&cli.StringFlag{Name: "go-mod-dir", Aliases: []string{"gomod"}},
+				&cli.BoolFlag{Name: "include-transitive", Aliases: []string{"transitive"}},
 			},
-			Flags: []cli.Flag{&cli.StringFlag{Name: "go-mod-dir", Aliases: []string{"gomod"}}},
 		},
 		{
 			Name:  "dlearthly",
