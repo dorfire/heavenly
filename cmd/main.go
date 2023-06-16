@@ -1,7 +1,9 @@
 package main
 
 import (
+	"errors"
 	"fmt"
+	"github.com/dorfire/heavenly/pkg/godepresolver"
 	"log"
 	"os"
 
@@ -101,18 +103,36 @@ func appCommands() []*cli.Command {
 			},
 		},
 		{
+			// Draws inspiration from Gazelle
+			// https://github.com/bazelbuild/bazel-gazelle
 			Name:      "gocopies",
 			Usage:     "analyze a given Go package and print the COPY commands it needs in order to build",
 			ArgsUsage: "package path",
-			Action:    func(cCtx *cli.Context) error { return resolveGoImports(cCtx, false) },
-			Flags:     []cli.Flag{&cli.StringFlag{Name: "go-mod-dir", Aliases: []string{"gomod"}}},
-		},
-		{
-			Name:      "gotestcopies",
-			Usage:     "analyze a given Go package and print the COPY commands it needs in order to build tests",
-			ArgsUsage: "package path",
-			Action:    func(cCtx *cli.Context) error { return resolveGoImports(cCtx, true) },
-			Flags:     []cli.Flag{&cli.StringFlag{Name: "go-mod-dir", Aliases: []string{"gomod"}}},
+			Action: func(cCtx *cli.Context) error {
+				pkgPath := cCtx.Args().First()
+				if pkgPath == "" {
+					return errors.New("missing Go package argument")
+				}
+
+				r, err := godepresolver.New(cCtx.String("go-mod-dir"), logger)
+				if err != nil {
+					return err
+				}
+
+				copies, testCopies, err := r.RecursivelyResolveImportsToCopyCommands(pkgPath)
+				if err != nil {
+					return err
+				}
+
+				logger.PrintPhaseHeader("\nCOPY commands for regular Go source files", false, "")
+				fmt.Println(godepresolver.FormatCopyCommands(copies))
+
+				logger.PrintPhaseHeader("\nCOPY commands for Go test files", false, "")
+				fmt.Println(godepresolver.FormatCopyCommands(testCopies))
+
+				return nil
+			},
+			Flags: []cli.Flag{&cli.StringFlag{Name: "go-mod-dir", Aliases: []string{"gomod"}}},
 		},
 		{
 			Name:  "dlearthly",

@@ -49,7 +49,7 @@ func PackageImports(path string, test bool) (mapset.Set[string], error) {
 	}
 	// Make sure they are all in one package.
 	if len(pkgs) == 0 {
-		return nil, fmt.Errorf("no source-code package in directory %s", path)
+		return nil, fmt.Errorf("no source-code package in directory %s. fset: %v", path, fset)
 	}
 	if len(pkgs) > 1 {
 		return nil, fmt.Errorf("multiple packages in directory %s: %v", path, maps.Keys(pkgs))

@@ -15,6 +15,10 @@ func TestPackageImports(t *testing.T) {
 	testImports, err := goparse.PackageImports("testdata/pkga", true)
 	assert.NoError(t, err)
 	assertSetsEqual(t, mapset.NewThreadUnsafeSet("testing", "github.com/stretchr/testify/assert", "example.com/pkga"), testImports)
+
+	mainImports, err := goparse.PackageImports("testdata/pkga/cmd", false)
+	assert.NoError(t, err)
+	assertSetsEqual(t, mapset.NewThreadUnsafeSet("log", "net/http", "example.com/pkga"), mainImports)
 }
 
 func assertSetsEqual(t *testing.T, want, got mapset.Set[string]) {

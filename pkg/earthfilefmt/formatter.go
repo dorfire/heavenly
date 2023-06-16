@@ -35,7 +35,7 @@ func Format(ef spec.Earthfile) string {
 }
 
 func FormatCmd(cmd string, args []string) string {
-	return fmt.Sprintf("%s %s", cmd, formatArgs(args))
+	return fmt.Sprintf("%s %s", cmd, FormatArgs(args))
 }
 
 // TODO: recurse
@@ -55,7 +55,7 @@ func formatRecipe(w *strBuilder, indent int, r spec.Block) {
 	}
 }
 
-func formatArgs(args []string) string {
+func FormatArgs(args []string) string {
 	// Some args deserve special treatment, such as '=' which is not preceded/followed by a space; e.g. "ENV X=Y".
 	// Thus, a plain strings.Join isn't a good fit here
 	w := new(strBuilder)
