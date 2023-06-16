@@ -2,11 +2,12 @@ package main
 
 import (
 	"fmt"
+	"log"
+	"os"
+
 	"github.com/earthly/earthly/conslogging"
 	"github.com/earthly/earthly/util/fileutil"
 	cli "github.com/urfave/cli/v2"
-	"log"
-	"os"
 )
 
 var (

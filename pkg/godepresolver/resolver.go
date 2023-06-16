@@ -2,35 +2,31 @@ package godepresolver
 
 import (
 	"fmt"
+	"golang.org/x/exp/maps"
 	"golang.org/x/mod/modfile"
 	"io/fs"
 	"path/filepath"
-	"sort"
 	"strings"
 
 	mapset "github.com/deckarep/golang-set/v2"
-	"github.com/dorfire/heavenly/pkg/earthfilefmt"
-	"github.com/earthly/earthly/ast/spec"
-	"github.com/earthly/earthly/conslogging"
-	"github.com/samber/lo"
-
 	"github.com/dorfire/heavenly/pkg/earthdir"
 	"github.com/dorfire/heavenly/pkg/goparse"
-)
-
-const (
-	selfCopyCmd = "COPY --dir +src/* ."
+	"github.com/earthly/earthly/ast/spec"
+	"github.com/earthly/earthly/conslogging"
 )
 
 var (
 	dirsToSkip = mapset.NewThreadUnsafeSet("testdata", "node_modules")
 )
 
+type pkgImports map[string]bool // path -> is transitive
+
 type GoDepResolver struct {
-	goModRoot string
-	projRoot  string
-	goModFile *modfile.File
-	log       conslogging.ConsoleLogger
+	goModRoot      string
+	projRoot       string
+	goModFile      *modfile.File
+	log            conslogging.ConsoleLogger
+	pkgImportCache map[string]pkgImports // path -> imports
 }
 
 func New(goModDir string, log conslogging.ConsoleLogger) (*GoDepResolver, error) {
@@ -50,12 +46,31 @@ func New(goModDir string, log conslogging.ConsoleLogger) (*GoDepResolver, error)
 		return nil, fmt.Errorf("could not parse go.mod in %s: %w", goModRoot, err)
 	}
 
-	return &GoDepResolver{goModRoot, projRoot, goModFile, log}, nil
+	return &GoDepResolver{
+		goModRoot,
+		projRoot,
+		goModFile,
+		log,
+		map[string]pkgImports{},
+	}, nil
 }
+
+// ResolveImportsToCopyCommands resolves internal Go imports in a given package to the COPY commands they probably depend on.
+// This is a poor man's Gazelle - it presumes every imported directory has an Earthfile in it, or above it, with a +src
+// target, but doesn't actually ensure it includes the required Go source files or that it even exists.
+// If includeTransitive is true, this func will recursively collect all transitive imports from non-test deps.
 func (r *GoDepResolver) ResolveImportsToCopyCommands(
 	pkgPath string, includeTransitive bool,
-) (imports []spec.Command, testOnlyImports []spec.Command, err error) {
-	err = filepath.Walk(pkgPath, func(p string, inf fs.FileInfo, err error) error {
+) (importCopyCmds []spec.Command, testOnlyCopyCmds []spec.Command, err error) {
+	pkgPathAbs, err := filepath.Abs(pkgPath)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	goImports := pkgImports{}
+	goTestImports := pkgImports{}
+
+	err = filepath.WalkDir(pkgPath, func(p string, inf fs.DirEntry, err error) error {
 		if err != nil {
 			return fmt.Errorf("could not access path %q: %v\n", p, err)
 		}
@@ -68,72 +83,37 @@ func (r *GoDepResolver) ResolveImportsToCopyCommands(
 			return filepath.SkipDir
 		}
 
-		r.log.DebugPrintf("Resolving %q", p)
+		r.log.DebugPrintf("Resolving Go pkg dir %q", p)
 		i, t, err := r.resolve(p, includeTransitive)
 		if err != nil {
 			// This could be ok; some dirs only contain other packages
-			r.log.DebugPrintf("could not resolve imports for pkg %q: %v\n", p, err)
+			r.log.DebugPrintf("Could not resolve imports for pkg %q: %v\n", p, err)
 			return nil
 		}
 
-		imports = append(imports, i...)
-		testOnlyImports = append(testOnlyImports, t...)
+		extend(goImports, i)
+		extend(goTestImports, t)
 		return nil
 	})
 	if err != nil {
 		return nil, nil, err
 	}
 
-	return sortAndDedupCopies(imports), sortAndDedupCopies(testOnlyImports), nil
-}
-
-// ResolveImportsToCopyCommands resolves internal Go imports in a given package to the COPY commands they probably depend on.
-// This is a poor man's Gazelle - it presumes every imported directory has an Earthfile in it, or above it, with a +src
-// target, but doesn't actually ensure it includes the required Go source files or that it even exists.
-// If includeTransitive is true, this func will recursively collect all transitive imports from non-test deps.
-func (r *GoDepResolver) resolve(
-	pkgPath string, includeTransitive bool,
-) (imports []spec.Command, testOnlyImports []spec.Command, err error) {
-	pkgImports, err := goparse.PackageImports(pkgPath, false)
+	//r.log.DebugPrintf("*** Detected Go imports for %q: ***", pkgPath)
+	//r.log.DebugPrintf("- %s", strings.Join(goImports.ToSlice(), "\n- "))
+	importCopyCmds, err = r.resolveCopyCommandsForImports(goImports, pkgPathAbs)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	if includeTransitive {
-		// for each module-internal package, recursively resolve its non-test imports
-		for dep := range pkgImports.Iter() {
-			if isInternal := strings.HasPrefix(dep, r.goModFile.Module.Mod.Path); !isInternal {
-				continue
-			}
-			r.log.DebugPrintf("Resolving transitive import %q from %q", dep, pkgPath)
-			depImports, err := goparse.PackageImports(r.pkgGoPathToFSDir(dep), false)
-			if err != nil {
-				return nil, nil, err
-			}
-			pkgImports = pkgImports.Union(depImports)
-		}
-	}
-
-	testPkgImports, _ := goparse.PackageImports(pkgPath, true)
-	if testPkgImports != nil {
-		testPkgImports = testPkgImports.Difference(pkgImports)
-	}
-
-	pkgPathAbs, err := filepath.Abs(pkgPath)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	r.log.DebugPrintf("Detected Go imports:")
-	r.log.DebugPrintf(strings.Join(pkgImports.ToSlice(), "\n"))
-
-	imports, err = r.resolveCopyCommandsForImports(pkgImports, pkgPathAbs)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	if testPkgImports != nil {
-		testOnlyImports, err = r.resolveCopyCommandsForImports(testPkgImports, pkgPathAbs)
+	if goTestImports != nil {
+		maps.DeleteFunc(goTestImports, func(k string, _ bool) bool {
+			_, ok := goImports[k]
+			return ok
+		})
+		//r.log.DebugPrintf("*** Detected Go test imports for %q: ***", pkgPath)
+		//r.log.DebugPrintf("- %s", strings.Join(goTestImports.ToSlice(), "\n- "))
+		testOnlyCopyCmds, err = r.resolveCopyCommandsForImports(goTestImports, pkgPathAbs)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -142,34 +122,25 @@ func (r *GoDepResolver) resolve(
 	return
 }
 
-func FormatCopyCommands(cmds []spec.Command) string {
-	cmdLines := lo.Map(cmds, func(c spec.Command, _ int) string { return earthfilefmt.FormatCmd(c.Name, c.Args) })
-	sort.Strings(cmdLines)
-
-	// "COPY --dir +src/* ." should be first
-	selfCopyIdx := sort.SearchStrings(cmdLines, selfCopyCmd)
-	if selfCopyIdx != 0 && selfCopyIdx < len(cmdLines) && cmdLines[selfCopyIdx] == selfCopyCmd {
-		var tail []string
-		if selfCopyIdx+1 < len(cmdLines) {
-			tail = cmdLines[selfCopyIdx+1:]
-		}
-		cmdLines = append(cmdLines[:selfCopyIdx], tail...)
-		cmdLines = append([]string{selfCopyCmd}, cmdLines...)
+func (r *GoDepResolver) resolve(pkgPath string, includeTransitive bool) (imports, testOnlyImports pkgImports, err error) {
+	imports, err = r.collectImports(pkgPath, false, includeTransitive)
+	if err != nil {
+		return
 	}
 
-	return strings.Join(cmdLines, "\n")
+	// Ignoring err because some dirs don't have test files
+	testOnlyImports, _ = r.collectImports(pkgPath, true, includeTransitive)
+	return
 }
 
-func (r *GoDepResolver) resolveCopyCommandsForImports(pkgImports mapset.Set[string], pkgPathAbs string) ([]spec.Command, error) {
+func (r *GoDepResolver) resolveCopyCommandsForImports(imps pkgImports, pkgPathAbs string) ([]spec.Command, error) {
 	var res []spec.Command
-	modPath := r.goModFile.Module.Mod.Path
-	for imp := range pkgImports.Iter() {
-		impDir := r.pkgGoPathToFSDir(imp)
-		if !strings.HasPrefix(imp, modPath) || impDir == pkgPathAbs {
-			continue // Ignore non-internal imports and same-dir imports
+	for imp, isTransitive := range imps {
+		if !r.isInternalImport(imp) {
+			continue // Ignore non-internal imports
 		}
 
-		cmd, err := r.resolveCopyCommandForGoImport(pkgPathAbs, impDir)
+		cmd, err := r.resolveCopyCommandForGoImport(pkgPathAbs, r.pkgGoPathToFSDir(imp), isTransitive)
 		if err != nil {
 			return nil, err
 		}
@@ -179,7 +150,7 @@ func (r *GoDepResolver) resolveCopyCommandsForImports(pkgImports mapset.Set[stri
 	return res, nil
 }
 
-func (r *GoDepResolver) resolveCopyCommandForGoImport(importerDir, importeeDir string) (spec.Command, error) {
+func (r *GoDepResolver) resolveCopyCommandForGoImport(importerDir, importeeDir string, transitive bool) (spec.Command, error) {
 	resolvedEarthdir, err := earthdir.InOrAbove(importeeDir, r.goModRoot, true) // TODO: cache here to save some I/O?
 	if err != nil {
 		return spec.Command{}, err
@@ -193,22 +164,24 @@ func (r *GoDepResolver) resolveCopyCommandForGoImport(importerDir, importeeDir s
 	if err != nil {
 		return spec.Command{}, err
 	}
-	dst := replaceRootWithTopArg(importeeDir, r.goModRoot)
-	return spec.Command{Name: "COPY", Args: []string{"--dir", src, dst}}, nil
+
+	args := []string{"--dir", src, replaceRootWithTopArg(importeeDir, r.goModRoot) + "/"}
+	if transitive {
+		args = append(args, "# indirect")
+	}
+	return spec.Command{Name: "COPY", Args: args}, nil
+}
+
+func (r *GoDepResolver) isInternalImport(importPath string) bool {
+	return strings.HasPrefix(importPath, r.goModFile.Module.Mod.Path)
 }
 
 func (r *GoDepResolver) pkgGoPathToFSDir(importPath string) string {
 	return strings.Replace(importPath, r.goModFile.Module.Mod.Path, r.goModRoot, 1)
 }
 
-func sortAndDedupCopies(copies []spec.Command) []spec.Command {
-	sort.SliceStable(copies, func(i, j int) bool {
-		cmdI, cmdJ := earthfilefmt.FormatArgs(copies[i].Args), earthfilefmt.FormatArgs(copies[j].Args)
-		return strings.Compare(cmdI, cmdJ) < 0
-	})
-	return lo.UniqBy[spec.Command, string](copies, func(c spec.Command) string {
-		return earthfilefmt.FormatArgs(c.Args)
-	})
+func pkgImportCacheKey(pkgPath string, test bool) string {
+	return fmt.Sprintf("%s-%t", pkgPath, test)
 }
 
 func formatCopyCmdSrc(projRoot, dirInProject, closestEarthdir string) (string, error) {
@@ -227,4 +200,12 @@ func formatCopyCmdSrc(projRoot, dirInProject, closestEarthdir string) (string, e
 
 func replaceRootWithTopArg(s, projRoot string) string {
 	return strings.Replace(s, projRoot, "$TOP", 1)
+}
+
+func extend[K comparable, V any](dst, src map[K]V) {
+	for k, v := range src {
+		if _, ok := dst[k]; !ok {
+			dst[k] = v
+		}
+	}
 }
