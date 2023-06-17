@@ -6,7 +6,6 @@ import (
 	"os"
 
 	"github.com/earthly/earthly/conslogging"
-	"github.com/earthly/earthly/util/fileutil"
 	cli "github.com/urfave/cli/v2"
 )
 
@@ -27,7 +26,7 @@ func main() {
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:   "chdir",
-				Action: chdir,
+				Action: func(ctx *cli.Context, p string) error { return os.Chdir(p) },
 			},
 			&cli.BoolFlag{
 				Name: "debug",
@@ -116,15 +115,4 @@ func appCommands() []*cli.Command {
 			},
 		},
 	}
-}
-
-func chdir(ctx *cli.Context, p string) error {
-	ok, err := fileutil.DirExists(p)
-	if err != nil {
-		return err
-	}
-	if !ok {
-		return fmt.Errorf("requested working dir '%s' does not exist", p)
-	}
-	return os.Chdir(p)
 }

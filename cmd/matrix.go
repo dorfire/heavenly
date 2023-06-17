@@ -35,14 +35,13 @@ func outputChangedChildBuilds(ctx *cli.Context) error {
 	progBar := newAnalysisProgressBar(len(buildsInTarget))
 
 	var targetsWithChanges []string
-	for _, t := range buildsInTarget {
-		// TODO: parallelize?
+	lop.ForEach(buildsInTarget, func(t earthfile.BuildCmd, _ int) {
 		// TODO: cache resolved deps across targets?
 		if changed := lo.Must(targetInputsChanged(ctx, repoChanges, t.Target)); changed {
 			targetsWithChanges = append(targetsWithChanges, t.Target)
 		}
 		_ = progBar.Add(1)
-	}
+	})
 
 	logger.DebugPrintf("Targets with changed inputs:")
 	logger.DebugPrintf(strings.Join(targetsWithChanges, "\n"))
@@ -97,7 +96,8 @@ func listDependentBuildsForInputs(ctx *cli.Context) error {
 	})
 	stopTimer()
 
-	logger.Printf("%d targets depend on inputs %v:", len(dependents), inputPaths)
+	logger.PrintPhaseHeader(
+		fmt.Sprintf("\n%d targets depend on inputs %v:", len(dependents), inputPaths), false, "")
 	logger.Printf(strings.Join(dependents, "\n"))
 	return nil
 }
