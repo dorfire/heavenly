@@ -84,13 +84,7 @@ func (r *GoDepResolver) ResolveImportsToCopyCommands(
 		}
 
 		r.log.DebugPrintf("Resolving Go pkg dir %q", p)
-		i, t, err := r.resolve(p, includeTransitive)
-		if err != nil {
-			// This could be ok; some dirs only contain other packages
-			r.log.DebugPrintf("Could not resolve imports for pkg %q: %v\n", p, err)
-			return nil
-		}
-
+		i, t := r.resolve(p, includeTransitive)
 		extend(goImports, i)
 		extend(goTestImports, t)
 		return nil
@@ -122,19 +116,17 @@ func (r *GoDepResolver) ResolveImportsToCopyCommands(
 	return
 }
 
-func (r *GoDepResolver) resolve(pkgPath string, includeTransitive bool) (imports, testOnlyImports pkgImports, err error) {
-	imports, err = r.collectImports(pkgPath, false, includeTransitive)
-	if err != nil {
-		return
-	}
-
-	// Ignoring err because some dirs don't have test files
+func (r *GoDepResolver) resolve(pkgPath string, includeTransitive bool) (imports, testOnlyImports pkgImports) {
+	// Ignoring err because some dirs have only test files
+	imports, _ = r.collectImports(pkgPath, false, includeTransitive)
+	// Ignoring err because some dirs don't have any test files
 	testOnlyImports, _ = r.collectImports(pkgPath, true, includeTransitive)
 	return
 }
 
 func (r *GoDepResolver) resolveCopyCommandsForImports(imps pkgImports, pkgPathAbs string) ([]spec.Command, error) {
 	var res []spec.Command
+	//progBar := progressbar.Default(int64(len(imps)), "Resolving Go imports in pkg "+strings.TrimPrefix(pkgPathAbs, r.projRoot))
 	for imp, isTransitive := range imps {
 		if !r.isInternalImport(imp) {
 			continue // Ignore non-internal imports
@@ -146,6 +138,7 @@ func (r *GoDepResolver) resolveCopyCommandsForImports(imps pkgImports, pkgPathAb
 		}
 
 		res = append(res, cmd)
+		//_ = progBar.Add(1)
 	}
 	return res, nil
 }
