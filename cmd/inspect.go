@@ -6,16 +6,18 @@ import (
 	"fmt"
 	"io/fs"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 
 	mapset "github.com/deckarep/golang-set/v2"
-	"github.com/dorfire/heavenly/pkg/earthfile"
 	"github.com/earthly/earthly/ast/spec"
 	"github.com/earthly/earthly/util/fileutil"
 	"github.com/samber/lo"
 	"github.com/tufin/asciitree"
 	cli "github.com/urfave/cli/v2"
+
+	"github.com/dorfire/heavenly/pkg/earthfile"
 )
 
 func inspectTargetInputs(ctx *cli.Context) error {
@@ -96,10 +98,10 @@ func expandCopyCmd(ef *earthfile.Earthfile, cp earthfile.CopyCmd) (res []string,
 	fsFrom := filepath.Join(ef.Dir, cp.From)
 
 	if strings.Contains(cp.From, "+") { // If 'from' path looks like an Earthly target
-		targetPath, _ := splitTargetFileSelector(cp.From)
+		targetPath, targetSelector := splitTargetFileSelector(cp.From)
 		fromEarthfile, fromTarget, err := ef.Target(targetPath)
 		if err != nil {
-			return nil, fmt.Errorf("could not find target '%s': %w", cp.From, err)
+			return nil, fmt.Errorf("in %s: could not find target '%s': %w", ef.Path, cp.From, err)
 		}
 
 		targetCPs := earthfile.CollectCopyCommands(fromEarthfile, fromTarget)
@@ -107,6 +109,19 @@ func expandCopyCmd(ef *earthfile.Earthfile, cp earthfile.CopyCmd) (res []string,
 		res = lo.FlatMap(targetCPs, func(c earthfile.CopyCmd, _ int) []string {
 			return lo.Must(expandCopyCmd(c.File, c))
 		})
+
+		// TODO: better filtering logics
+		normalizedSelector := strings.Trim(targetSelector, "/")
+		if targetSelector != "" && normalizedSelector != "*" && strings.Contains(normalizedSelector, "*") {
+			wildcardRe, err := regexp.Compile("^" + strings.ReplaceAll(targetSelector, "*", ".*") + "$")
+			if err != nil {
+				return nil, fmt.Errorf("in %s: could not compile path matcher regexp: %w", ef.Path, err)
+			}
+			res = lo.Filter(res, func(p string, _ int) bool {
+				pathInTarget := strings.TrimPrefix(p, fromEarthfile.Dir)
+				return wildcardRe.MatchString(pathInTarget)
+			})
+		}
 	} else if strings.Contains(cp.From, "*") {
 		res, err = filepath.Glob(fsFrom)
 		if err != nil {
