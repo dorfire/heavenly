@@ -85,10 +85,17 @@ func appCommands() []*cli.Command {
 		{
 			// Draws inspiration from bazel-diff
 			// https://github.com/Tinder/bazel-diff
-			Name:   "matrix",
-			Usage:  "analyze a given Earthly target and output the BUILD commands within it that need rebuilding",
+			Name: "matrix",
+			Usage: "analyze a given Earthly target and output the BUILD commands within it that need rebuilding " +
+				"for a given git diff",
 			Action: outputChangedChildBuilds,
 			Flags:  append([]cli.Flag{&cli.BoolFlag{Name: "json"}}, gitDiffArgs...),
+		},
+		{
+			Name: "matrix-deps",
+			Usage: "analyze a given Earthly target and output the BUILD commands within it that need rebuilding " +
+				"for a given set of changed input files",
+			Action: listDependentBuildsForInputs,
 		},
 		{
 			Name:      "inspect",

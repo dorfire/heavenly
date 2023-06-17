@@ -7,6 +7,7 @@ import (
 	"io/fs"
 	"path/filepath"
 	"strings"
+	"time"
 
 	mapset "github.com/deckarep/golang-set/v2"
 	"github.com/dorfire/heavenly/pkg/earthfile"
@@ -41,6 +42,8 @@ func inspectTargetInputs(ctx *cli.Context) error {
 
 // analyzeTargetDeps analyzes an Earthly target at the given path and returns the files it is assumed to depend on.
 func analyzeTargetDeps(tPath string) (mapset.Set[string], error) {
+	//defer timer("Analyzing " + tPath)()
+
 	ef, target, err := earthfile.ParseTarget(tPath)
 	if err != nil {
 		return nil, err
@@ -167,4 +170,9 @@ func filesInDir(d string) (res []string, err error) {
 		return nil
 	})
 	return res, err
+}
+
+func timer(op string) func() {
+	start := time.Now()
+	return func() { logger.Printf("%s took %v\n", op, time.Since(start)) }
 }
