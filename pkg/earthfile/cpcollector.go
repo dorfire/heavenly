@@ -1,7 +1,6 @@
 package earthfile
 
 import (
-	"log"
 	"strings"
 
 	"github.com/earthly/earthly/ast/spec"
@@ -40,7 +39,7 @@ func (v *copyCmdCollector) VisitCommand(c spec.Command) {
 	case "COPY":
 		v.visitCopyCommand(c)
 	case "BUILD":
-		log.Printf("[WARNING] %s: skipping BUILD command parsing in copyCmdCollector", v.ef.Dir)
+		//log.Printf("[WARNING] %s: skipping BUILD command parsing in copyCmdCollector", v.ef.Dir)
 	}
 }
 

@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"time"
 
 	mapset "github.com/deckarep/golang-set/v2"
 	"github.com/earthly/earthly/ast/spec"
@@ -43,6 +44,8 @@ func inspectTargetInputs(ctx *cli.Context) error {
 
 // analyzeTargetDeps analyzes an Earthly target at the given path and returns the files it is assumed to depend on.
 func analyzeTargetDeps(tPath string) (mapset.Set[string], error) {
+	//defer timer("Analyzing " + tPath)()
+
 	ef, target, err := earthfile.ParseTarget(tPath)
 	if err != nil {
 		return nil, err
@@ -110,14 +113,9 @@ func expandCopyCmd(ef *earthfile.Earthfile, cp earthfile.CopyCmd) (res []string,
 		// TODO: better filtering logics
 		normalizedSelector := strings.Trim(targetSelector, "/")
 		if targetSelector != "" && normalizedSelector != "*" && strings.Contains(normalizedSelector, "*") {
-			wildcardRe, err := regexp.Compile("^" + strings.ReplaceAll(targetSelector, "*", ".*") + "$")
-			if err != nil {
-				return nil, fmt.Errorf("in %s: could not compile path matcher regexp: %w", ef.Path, err)
+			if res, err = filterGlobMatches(res, targetSelector, fromEarthfile); err != nil {
+				return nil, fmt.Errorf("in %s: could not filter glob pattern %q: %w", ef.Path, targetSelector, err)
 			}
-			res = lo.Filter(res, func(p string, _ int) bool {
-				pathInTarget := strings.TrimPrefix(p, fromEarthfile.Dir)
-				return wildcardRe.MatchString(pathInTarget)
-			})
 		}
 	} else if strings.Contains(cp.From, "*") {
 		res, err = filepath.Glob(fsFrom)
@@ -140,6 +138,18 @@ func expandCopyCmd(ef *earthfile.Earthfile, cp earthfile.CopyCmd) (res []string,
 	logger.DebugPrintf("[%s] Expanded `%s` to =>\n  %v", ef.Dir, cp.Line, res)
 
 	return res, nil
+}
+
+// filterGlobMatches returns all elements of `in` that match the given selector.
+func filterGlobMatches(in []string, targetSelector string, fromEarthfile *earthfile.Earthfile) ([]string, error) {
+	wildcardRe, err := regexp.Compile("^" + strings.ReplaceAll(targetSelector, "*", ".*") + "$")
+	if err != nil {
+		return nil, err
+	}
+	return lo.Filter(in, func(p string, _ int) bool {
+		pathInTarget := strings.TrimPrefix(p, fromEarthfile.Dir)
+		return wildcardRe.MatchString(pathInTarget)
+	}), nil
 }
 
 func expandGlobMatches(matches []string) ([]string, error) {
@@ -182,4 +192,9 @@ func filesInDir(d string) (res []string, err error) {
 		return nil
 	})
 	return res, err
+}
+
+func timer(op string) func() {
+	start := time.Now()
+	return func() { logger.Printf("%s took %v\n", op, time.Since(start)) }
 }
