@@ -21,16 +21,17 @@ DESCRIPTION:
    heavenly is a CLI tool that formats, lints and analyzes Earthly repos and the Earthfiles in them.
 
 COMMANDS:
-   format, fmt      [half implemented] format Earthfiles in the current repo according to a set of rules
-   lint             [unimplemented] lint the current repo according to a set of rules
+   format, fmt      format Earthfiles in the current repo according to a set of rules
+   lint             lint the current repo according to a set of rules
    changed          analyze a given Earthly target and exit with 0 if it has any changed input files. exit with 1 otherwise.
-   matrix           analyze a given Earthly target and output the BUILD commands within it that need rebuilding
+   matrix           analyze a given Earthly target and output the BUILD commands within it that need rebuilding for a given git diff
+   matrix-deps      analyze a given Earthly target and output the BUILD commands within it that need rebuilding for a given set of changed input files
    inspect, inputs  analyze a given Earthly target and show which source files it depends on
-   dlearthly        [unimplemented] download an Earthly binary suitable for the current OS/arch and verify it against a given hash
+   gocopies         analyze a given Go package and print the COPY commands it needs in order to build
    help, h          Shows a list of commands or help for one command
 
 GLOBAL OPTIONS:
    --chdir value  
    --debug        (default: false)
-   --help, -h     show help (default: false)
+   --help, -h     show help
 ```
