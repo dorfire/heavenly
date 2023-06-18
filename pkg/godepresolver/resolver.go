@@ -9,10 +9,11 @@ import (
 	"strings"
 
 	mapset "github.com/deckarep/golang-set/v2"
-	"github.com/dorfire/heavenly/pkg/earthdir"
-	"github.com/dorfire/heavenly/pkg/goparse"
 	"github.com/earthly/earthly/ast/spec"
 	"github.com/earthly/earthly/conslogging"
+
+	"github.com/dorfire/heavenly/pkg/earthdir"
+	"github.com/dorfire/heavenly/pkg/goparse"
 )
 
 var (

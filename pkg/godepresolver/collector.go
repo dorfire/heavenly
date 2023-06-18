@@ -24,13 +24,13 @@ func (r *GoDepResolver) collectTransitiveImports(pkgPath string, test, isFirstCa
 		return nil, err
 	}
 	if !isFirstCall {
-		for k, _ := range imports {
+		for k := range imports {
 			imports[k] = true
 		}
 	}
 
 	// for each module-internal package, recursively resolve its NON-TEST imports
-	for dep, _ := range imports {
+	for dep := range imports {
 		if !r.isInternalImport(dep) {
 			continue
 		}
