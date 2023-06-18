@@ -73,7 +73,7 @@ func (r *GoDepResolver) ResolveImportsToCopyCommands(
 
 	err = filepath.WalkDir(pkgPath, func(p string, inf fs.DirEntry, err error) error {
 		if err != nil {
-			return fmt.Errorf("could not access path %q: %v\n", p, err)
+			return fmt.Errorf("could not access path %q: %w", p, err)
 		}
 
 		if !inf.IsDir() {
