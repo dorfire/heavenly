@@ -110,14 +110,9 @@ func expandCopyCmd(ef *earthfile.Earthfile, cp earthfile.CopyCmd) (res []string,
 		// TODO: better filtering logics
 		normalizedSelector := strings.Trim(targetSelector, "/")
 		if targetSelector != "" && normalizedSelector != "*" && strings.Contains(normalizedSelector, "*") {
-			wildcardRe, err := regexp.Compile("^" + strings.ReplaceAll(targetSelector, "*", ".*") + "$")
-			if err != nil {
-				return nil, fmt.Errorf("in %s: could not compile path matcher regexp: %w", ef.Path, err)
+			if res, err = filterGlobMatches(res, targetSelector, fromEarthfile); err != nil {
+				return nil, fmt.Errorf("in %s: could not filter glob pattern %q: %w", ef.Path, targetSelector, err)
 			}
-			res = lo.Filter(res, func(p string, _ int) bool {
-				pathInTarget := strings.TrimPrefix(p, fromEarthfile.Dir)
-				return wildcardRe.MatchString(pathInTarget)
-			})
 		}
 	} else if strings.Contains(cp.From, "*") {
 		res, err = filepath.Glob(fsFrom)
@@ -140,6 +135,18 @@ func expandCopyCmd(ef *earthfile.Earthfile, cp earthfile.CopyCmd) (res []string,
 	logger.DebugPrintf("[%s] Expanded `%s` to =>\n  %v", ef.Dir, cp.Line, res)
 
 	return res, nil
+}
+
+// filterGlobMatches returns all elements of `in` that match the given selector.
+func filterGlobMatches(in []string, targetSelector string, fromEarthfile *earthfile.Earthfile) ([]string, error) {
+	wildcardRe, err := regexp.Compile("^" + strings.ReplaceAll(targetSelector, "*", ".*") + "$")
+	if err != nil {
+		return nil, err
+	}
+	return lo.Filter(in, func(p string, _ int) bool {
+		pathInTarget := strings.TrimPrefix(p, fromEarthfile.Dir)
+		return wildcardRe.MatchString(pathInTarget)
+	}), nil
 }
 
 func expandGlobMatches(matches []string) ([]string, error) {

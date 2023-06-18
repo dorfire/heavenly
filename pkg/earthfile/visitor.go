@@ -42,17 +42,17 @@ func WalkRecipe(recipe spec.Block, v StmtVisitor) {
 	}
 }
 
-func (v *UnimplementedStmtVisitor) VisitCommand(c spec.Command) {
+func (v *UnimplementedStmtVisitor) VisitCommand(_ spec.Command) {
 }
 
-func (v *UnimplementedStmtVisitor) VisitWith(s spec.WithStatement) {
+func (v *UnimplementedStmtVisitor) VisitWith(_ spec.WithStatement) {
 }
 
-func (v *UnimplementedStmtVisitor) VisitIf(s spec.IfStatement) {
+func (v *UnimplementedStmtVisitor) VisitIf(_ spec.IfStatement) {
 }
 
-func (v *UnimplementedStmtVisitor) VisitFor(s spec.ForStatement) {
+func (v *UnimplementedStmtVisitor) VisitFor(_ spec.ForStatement) {
 }
 
-func (v *UnimplementedStmtVisitor) VisitWait(s spec.WaitStatement) {
+func (v *UnimplementedStmtVisitor) VisitWait(_ spec.WaitStatement) {
 }
