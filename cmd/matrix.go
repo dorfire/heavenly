@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/samber/lo"
 	lop "github.com/samber/lo/parallel"
@@ -117,4 +118,9 @@ func newAnalysisProgressBar(targets int) *progressbar.ProgressBar {
 		ctor = progressbar.DefaultSilent
 	}
 	return ctor(int64(targets), "Analyzing BUILD commands")
+}
+
+func timer(op string) func() {
+	start := time.Now()
+	return func() { logger.Printf("%s took %v\n", op, time.Since(start)) }
 }

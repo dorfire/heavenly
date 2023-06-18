@@ -107,6 +107,18 @@ func appCommands() []*cli.Command {
 			},
 		},
 		{
+			// Draws inspiration from Gazelle
+			// https://github.com/bazelbuild/bazel-gazelle
+			Name:      "gocopies",
+			Usage:     "analyze a given Go package and print the COPY commands it needs in order to build",
+			ArgsUsage: "package path",
+			Action:    printCopyCommandsForGoDeps,
+			Flags: []cli.Flag{
+				&cli.StringFlag{Name: "go-mod-dir", Aliases: []string{"gomod"}},
+				&cli.BoolFlag{Name: "include-transitive", Aliases: []string{"transitive"}},
+			},
+		},
+		{
 			Name:  "dlearthly",
 			Usage: "download an Earthly binary suitable for the current OS/arch and verify it against a given hash",
 			Action: func(cCtx *cli.Context) error {
