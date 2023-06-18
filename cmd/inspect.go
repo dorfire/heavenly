@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/fs"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	mapset "github.com/deckarep/golang-set/v2"
@@ -94,7 +95,7 @@ func expandCopyCmd(ef *earthfile.Earthfile, cp earthfile.CopyCmd) (res []string,
 	fsFrom := filepath.Join(ef.Dir, cp.From)
 
 	if strings.Contains(cp.From, "+") { // If 'from' path looks like an Earthly target
-		targetPath, _ := splitTargetFileSelector(cp.From)
+		targetPath, targetSelector := splitTargetFileSelector(cp.From)
 		fromEarthfile, fromTarget, err := ef.Target(targetPath)
 		if err != nil {
 			return nil, fmt.Errorf("in %s: could not find target '%s': %w", ef.Path, cp.From, err)
@@ -105,6 +106,14 @@ func expandCopyCmd(ef *earthfile.Earthfile, cp earthfile.CopyCmd) (res []string,
 		res = lo.FlatMap(targetCPs, func(c earthfile.CopyCmd, _ int) []string {
 			return lo.Must(expandCopyCmd(c.File, c))
 		})
+
+		// TODO: better filtering logics
+		normalizedSelector := strings.Trim(targetSelector, "/")
+		if targetSelector != "" && normalizedSelector != "*" && strings.Contains(normalizedSelector, "*") {
+			if res, err = filterGlobMatches(res, targetSelector, fromEarthfile); err != nil {
+				return nil, fmt.Errorf("in %s: could not filter glob pattern %q: %w", ef.Path, targetSelector, err)
+			}
+		}
 	} else if strings.Contains(cp.From, "*") {
 		res, err = filepath.Glob(fsFrom)
 		if err != nil {
@@ -126,6 +135,18 @@ func expandCopyCmd(ef *earthfile.Earthfile, cp earthfile.CopyCmd) (res []string,
 	logger.DebugPrintf("[%s] Expanded `%s` to =>\n  %v", ef.Dir, cp.Line, res)
 
 	return res, nil
+}
+
+// filterGlobMatches returns all elements of `in` that match the given selector.
+func filterGlobMatches(in []string, targetSelector string, fromEarthfile *earthfile.Earthfile) ([]string, error) {
+	wildcardRe, err := regexp.Compile("^" + strings.ReplaceAll(targetSelector, "*", ".*") + "$")
+	if err != nil {
+		return nil, err
+	}
+	return lo.Filter(in, func(p string, _ int) bool {
+		pathInTarget := strings.TrimPrefix(p, fromEarthfile.Dir)
+		return wildcardRe.MatchString(pathInTarget)
+	}), nil
 }
 
 func expandGlobMatches(matches []string) ([]string, error) {
