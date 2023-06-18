@@ -118,13 +118,13 @@ func appCommands() []*cli.Command {
 				&cli.BoolFlag{Name: "include-transitive", Aliases: []string{"transitive"}},
 			},
 		},
-		{
-			Name:  "dlearthly",
-			Usage: "download an Earthly binary suitable for the current OS/arch and verify it against a given hash",
-			Action: func(cCtx *cli.Context) error {
-				fmt.Println("UNIMPLEMENTED")
-				return nil
-			},
-		},
+		//{
+		//	Name:  "dlearthly",
+		//	Usage: "download an Earthly binary suitable for the current OS/arch and verify it against a given hash",
+		//	Action: func(cCtx *cli.Context) error {
+		//		fmt.Println("UNIMPLEMENTED")
+		//		return nil
+		//	},
+		//},
 	}
 }
