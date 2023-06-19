@@ -54,3 +54,6 @@ require (
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
+
+// Averts an error in GoLand
+replace github.com/earthly/earthly/util/deltautil v0.0.0-00010101000000-000000000000 => github.com/earthly/earthly/util/deltautil v0.0.0-20230616170205-250e67318255
