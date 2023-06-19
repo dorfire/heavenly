@@ -174,10 +174,6 @@ func (r *GoDepResolver) pkgGoPathToFSDir(importPath string) string {
 	return strings.Replace(importPath, r.goModFile.Module.Mod.Path, r.goModRoot, 1)
 }
 
-func pkgImportCacheKey(pkgPath string, test bool) string {
-	return fmt.Sprintf("%s-%t", pkgPath, test)
-}
-
 func formatCopyCmdSrc(projRoot, dirInProject, closestEarthdir string) (string, error) {
 	relToClosestEarthfile, err := filepath.Rel(closestEarthdir, dirInProject)
 	if err != nil {
