@@ -1,6 +1,9 @@
 package godepresolver
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/dorfire/heavenly/pkg/goparse"
 )
 
@@ -15,7 +18,7 @@ func (r *GoDepResolver) collectImports(pkgPath string, test, inclTransitive bool
 // plus the non-test imports of its module-internal transitive deps.
 func (r *GoDepResolver) collectTransitiveImports(pkgPath string, test, isFirstCall bool) (pkgImports, error) {
 	// If imports for this pkgPath have already been collected in the past, return them
-	if s, ok := r.pkgImportCache[pkgImportCacheKey(pkgPath, test)]; ok {
+	if s, ok := r.pkgImportCache[r.pkgImportCacheKey(pkgPath, test)]; ok {
 		return s, nil
 	}
 
@@ -42,7 +45,7 @@ func (r *GoDepResolver) collectTransitiveImports(pkgPath string, test, isFirstCa
 		extend(imports, depImports)
 	}
 
-	r.pkgImportCache[pkgImportCacheKey(pkgPath, test)] = imports
+	r.pkgImportCache[r.pkgImportCacheKey(pkgPath, test)] = imports
 	return imports, nil
 }
 
@@ -56,4 +59,8 @@ func collectDirectImports(pkgPath string, test bool) (pkgImports, error) {
 		res[i] = false
 	}
 	return res, nil
+}
+
+func (r *GoDepResolver) pkgImportCacheKey(pkgPath string, test bool) string {
+	return fmt.Sprintf("%s-%t", strings.TrimPrefix(pkgPath, r.goModRoot), test)
 }
