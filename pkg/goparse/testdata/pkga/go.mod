@@ -3,7 +3,7 @@ module example.com/pkga
 go 1.19
 
 require (
-	github.com/samber/lo v1.33.0
+	github.com/samber/lo v1.39.0
 	github.com/stretchr/testify v1.8.0
 )
 
