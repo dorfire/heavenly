@@ -21,6 +21,8 @@ github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/deckarep/golang-set/v2 v2.1.0 h1:g47V4Or+DUdzbs8FxCCmgb6VYd+ptPAngjM6dtGktsI=
 github.com/deckarep/golang-set/v2 v2.1.0/go.mod h1:VAky9rY/yGXJOLEDv3OMci+7wtDpOF4IN+y82NBOac4=
+github.com/deckarep/golang-set/v2 v2.6.0 h1:XfcQbWM1LlMB8BsJ8N9vW5ehnnPVIw0je80NsVHagjM=
+github.com/deckarep/golang-set/v2 v2.6.0/go.mod h1:VAky9rY/yGXJOLEDv3OMci+7wtDpOF4IN+y82NBOac4=
 github.com/earthly/earthly v0.7.8 h1:cygdkIJAXg0C9hygfeWDNjR/yz5mMoNhJTVmkqTpYs4=
 github.com/earthly/earthly v0.7.8/go.mod h1:l1Av3iLUD0gYmw3jdDts0M5Upbgl4TTnq1M31c2kaqk=
 github.com/earthly/earthly/ast v0.0.1 h1:gFllvl2dRYrkDT8J8DQHZIDG69O0k5c9Emc+WGi0YQw=
