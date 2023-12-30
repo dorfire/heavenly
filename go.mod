@@ -12,7 +12,7 @@ require (
 	github.com/schollz/progressbar/v3 v3.13.1
 	github.com/stretchr/testify v1.8.3
 	github.com/tufin/asciitree v0.0.0-20210127111056-bf70173ef677
-	github.com/urfave/cli/v2 v2.25.6
+	github.com/urfave/cli/v2 v2.27.1
 	golang.org/x/exp v0.0.0-20230224173230-c95f2b4c22f2
 	golang.org/x/mod v0.10.0
 )
