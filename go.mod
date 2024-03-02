@@ -10,7 +10,7 @@ require (
 	github.com/google/go-cmp v0.5.9
 	github.com/samber/lo v1.38.1
 	github.com/schollz/progressbar/v3 v3.13.1
-	github.com/stretchr/testify v1.8.3
+	github.com/stretchr/testify v1.9.0
 	github.com/tufin/asciitree v0.0.0-20210127111056-bf70173ef677
 	github.com/urfave/cli/v2 v2.25.6
 	golang.org/x/exp v0.0.0-20230224173230-c95f2b4c22f2
