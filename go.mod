@@ -1,13 +1,13 @@
 module github.com/dorfire/heavenly
 
-go 1.19
+go 1.21
 
 require (
 	github.com/deckarep/golang-set/v2 v2.1.0
 	github.com/earthly/earthly v0.7.8
 	github.com/earthly/earthly/ast v0.0.1
 	github.com/go-git/go-git/v5 v5.7.0
-	github.com/google/go-cmp v0.5.9
+	github.com/google/go-cmp v0.7.0
 	github.com/samber/lo v1.38.1
 	github.com/schollz/progressbar/v3 v3.13.1
 	github.com/stretchr/testify v1.8.3
